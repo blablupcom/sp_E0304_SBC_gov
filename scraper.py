@@ -84,10 +84,15 @@ def convert_mth_strings ( mth_string ):
 
 #### VARIABLES 1.0
 
-entity_id = "E0303_RBC_gov"
-url = "http://beta.reading.gov.uk/spendingover500"
+entity_id = "E0304_SBC_gov"
+urls =   ["http://www.slough.gov.uk/council/performance-and-spending/payment-reports-april-2015-to-march-2016.aspx",
+         "http://www.slough.gov.uk/council/performance-and-spending/payment-reports-april-2014-to-march-2015.aspx",
+         "http://www.slough.gov.uk/council/performance-and-spending/payment-reports-april-2013-to-march-2014.aspx",
+         "http://www.slough.gov.uk/council/performance-and-spending/payment-reports-april-2012-to-march-2013.aspx",
+         "http://www.slough.gov.uk/council/performance-and-spending/payment-reports-april-2011-to-march-2012.aspx"]
 errors = 0
 data = []
+url = 'http://example.com'
 
 #### READ HTML 1.0
 
@@ -96,29 +101,20 @@ soup = BeautifulSoup(html, "lxml")
 
 
 #### SCRAPE DATA
+import requests
 
-blocks = soup.find_all('div', attrs = {'class':'faqanswer'})
-for block in blocks:
-    links = block.find_all('a', href=True)
+for url in urls:
+    html = requests.get(url)
+    soup = BeautifulSoup(html.text, "lxml")
+    block = soup.find('div', attrs = {'class':'content imagesRight'})
+    links = block.findAll('a')
     for link in links:
-        url = 'http://beta.reading.gov.uk/' +link['href']
-        csvfile = link.text
-        if '.pdf' not in url:
-            csvfiles = csvfile.split('500 ')[-1].replace('-', '').strip().split('to')[-1].strip().split('[')[0].strip().split(' ')
-            if len(csvfiles) == 1:
-                csvfiles.append('2012')
-            csvMth = csvfiles[0][:3]
-            csvYr = csvfiles[1]
+        if '.csv' in link['href']:
+            url = 'http://www.slough.gov.uk' + link['href']
+            csvfile = link.text
+            csvMth =csvfile.split(' ')[-2].strip()[:3]
+            csvYr = csvfile.split(' ')[-1].strip()
             csvMth = convert_mth_strings(csvMth.upper())
-            if '_to_' or '-to-' in url:
-                if '06' in csvMth:
-                    csvMth = 'Q2'
-                if '03' in csvMth:
-                    csvMth = 'Q1'
-                if '09' in csvMth:
-                    csvMth = 'Q3'
-                if '12' in csvMth:
-                    csvMth = 'Q4'
             data.append([csvYr, csvMth, url])
 
 #### STORE DATA 1.0
